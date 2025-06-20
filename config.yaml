@@ -1,0 +1,21 @@
+wavelength: 1
+
+sources:
+  Nsx: 3
+  Nsy: None
+  Lxs: 5
+  Lys: None
+  center: [-2.5, 0]
+
+receivers:
+  Nrx: 3
+  Nry: None
+  Lxr: 5
+  Lyr: None
+  center: [2.5, 0]
+
+domain:
+  discretization: 100
+  Lx: 10
+  Ly: 10
+  center: [0, 0]
