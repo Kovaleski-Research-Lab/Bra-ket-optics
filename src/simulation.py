@@ -3,7 +3,7 @@ import torch
 from utils import euclidean_distance, sum_rule
 
 
-class Simulation(config: dict):
+class Simulation:
     def __init__(self, config: dict):
         self.config = config
         self.wavelength = config["wavelength"]

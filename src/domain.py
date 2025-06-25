@@ -1,7 +1,7 @@
 import torch
 from device import Device
 
-class Domain(config: dict):
+class Domain:
     def __init__(self, config: dict):
         self.config = config
 
