@@ -1,21 +1,30 @@
-wavelength: 1
+wavelength: 1550
 
-sources:
-  Nsx: 3
-  Nsy: None
-  Lxs: 5
-  Lys: None
-  center: [-2.5, 0]
+source:
+  axis: 'xy'
+  Nx: 166
+  Ny: 166
+  Nz: None
+  Lx: 2040
+  Ly: 2040
+  Lz: None
+  center: [0, 0, 0]
 
-receivers:
-  Nrx: 3
-  Nry: None
-  Lxr: 5
-  Lyr: None
-  center: [2.5, 0]
+receiver:
+  axis: 'xy'
+  Nx: 166
+  Ny: 166
+  Nz: None
+  Lx: 2040
+  Ly: 2040
+  Lz: None
+  center: [0, 0, 750]
 
-domain:
-  discretization: 100
-  Lx: 10
-  Ly: 10
-  center: [0, 0]
+plot_plane:
+  axis: 'xy'
+  discretization: 300
+  Lx: 2040
+  Ly: 2050
+  Lz: None
+  z_idx: 0
+  center: [0, 0, 750]
