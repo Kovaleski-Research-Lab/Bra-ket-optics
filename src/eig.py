@@ -1,6 +1,7 @@
 import numpy as np
 from tqdm import tqdm
 import scipy.linalg
+from scipy.sparse.linalg import svds
 
 from .utils import euclidean_distance, normalize_eigenvector
 
@@ -71,7 +72,7 @@ def free_space_transfer_function(s, r, k, method='direct', **kwargs) -> np.array
         raise ValueError("Method not recognized.")
 
 
-def calculate_modes(Gsr, normalize=True):
+def calculate_modes(Gsr, normalize=True, max_components=None):
     """
     Calculate modes from the transfer function matrix Gsr.
     
@@ -85,10 +86,13 @@ def calculate_modes(Gsr, normalize=True):
     """
     print("Calculating modes...")
     # Eigen-decomposition of Gsr^H Gsr
-    Gsrd_Gsr = np.matmul(np.matrix.getH(Gsr), Gsr)
-    eig_vals, eig_vect = scipy.linalg.eigh(Gsrd_Gsr)
-    eig_vals = np.flip(eig_vals)
-    eig_vect = np.flip(eig_vect, axis=-1)
+    Gsrd_Gsr = Gsr.conj().T @ Gsr
+    if max_components is None:
+        eig_vect, eig_vals, Vh = scipy.linalg.svd(Gsrd_Gsr, full_matrices=True)
+    else:
+        eig_vect, eig_vals, Vh = svds(Gsrd_Gsr, k=max_components)
+        eig_vals = np.flip(eig_vals)
+        eig_vect = np.flip(eig_vect, axis=-1)
     if normalize:
         eig_vect_normalized = normalize_eigenvector(eig_vect)
     else:

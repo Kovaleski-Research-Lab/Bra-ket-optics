@@ -27,7 +27,7 @@ if __name__ == "__main__":
     print("S:", S)
 
     # Calculate modes
-    eig_vals, eig_vect_normalized = calculate_modes(Gsr, normalize=False)
+    eig_vals, eig_vect_normalized = calculate_modes(Gsr, normalize=False, max_components=3)
 
     # Plot mode strengths
     plot_mode_strengths(eig_vals, S)

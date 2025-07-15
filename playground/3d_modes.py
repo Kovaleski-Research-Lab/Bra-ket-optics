@@ -253,8 +253,8 @@ if __name__ == "__main__":
     # Simulation parameters
     wavelength = 1.0
     k = 2 * np.pi / wavelength
-    Nsx, Nsy, dsx, dsy = 17, 17, wavelength, wavelength
-    Nrx, Nry, drx, dry = 17, 17, wavelength, wavelength
+    Nsx, Nsy, dsx, dsy = 17, 17, wavelength/2, wavelength/2
+    Nrx, Nry, drx, dry = 17, 17, wavelength/2, wavelength/2
     Lz = 50 * wavelength
 
     # Create 3D grid of sources and receivers
@@ -271,7 +271,8 @@ if __name__ == "__main__":
     # Eigen-decomposition of Gsr^H Gsr
 
     Gsrd_Gsr = Gsr.conj().T @ Gsr
-    eig_vect, eig_vals, Vh = np.linalg.svd(Gsrd_Gsr, full_matrices=True)
+    eig_vect, eig_vals, Vh = scipy.linalg.svd(Gsrd_Gsr, full_matrices=True)
+    #eig_vect, eig_vals, Vh = scipy.sparse.linalg.svds(Gsrd_Gsr, k=10)
     #eig_vals, eig_vect = scipy.linalg.eigh(Gsr)
     #eig_vals = np.flip(eig_vals)
     #eig_vect = np.flip(eig_vect, axis=-1)
