@@ -3,7 +3,7 @@ from src.utils import *
 from src.eig import free_space_transfer_function, calculate_modes
 from src.plotting import plot_modes, plot_mode_strengths
 from src.geometry import create_points, create_evaluation_points
-
+import pickle
 
 if __name__ == "__main__":
     config = yaml.safe_load(open("config.yaml", "r"))
@@ -27,11 +27,15 @@ if __name__ == "__main__":
     print("S:", S)
 
     # Calculate modes
-    eig_vals, eig_vect_normalized = calculate_modes(Gsr, normalize=False, max_components=3)
+    max_components = config.get('max_components', 10)
+    eig_vals, eig_vect_normalized = calculate_modes(Gsr, normalize=False, max_components=max_components)
+
+    # Save the eigenvectors/values
+    pickle.dump(eig_vals, open('eigen_values.pkl', 'wb'))
+    pickle.dump(eig_vect_normalized, open('eigen_vectors.pkl', 'wb'))
 
     # Plot mode strengths
     plot_mode_strengths(eig_vals, S)
-
 
     # Create evaluation points
     xx,yy,zz,evaluation_points = create_evaluation_points(config['plot_plane'])
@@ -39,6 +43,9 @@ if __name__ == "__main__":
 
     # Evaluate modes at the evaluation points
     modes = evaluate_modes(eig_vect_normalized, source_points, evaluation_points, wavenumber, z_normalize=True, method='vectorized')
+
+    # Save the modes
+    pickle.dump(modes, open('evaluated_modes.pkl', 'wb'))
 
     # Plot modes
     plot_modes(xx, yy, zz, modes, plane=config['plot_plane']['axis'], z=config['plot_plane'].get('z_idx'))

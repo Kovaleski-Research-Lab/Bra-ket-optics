@@ -1,4 +1,5 @@
 wavelength: 1550
+max_components: 15
 
 source:
   axis: 'xy'
@@ -18,13 +19,13 @@ receiver:
   Lx: 2040
   Ly: 2040
   Lz: None
-  center: [0, 0, 750]
+  center: [0, 0, 775]
 
 plot_plane:
   axis: 'xy'
-  discretization: 300
+  discretization: 166
   Lx: 2040
   Ly: 2040
   Lz: None
   z_idx: 0
-  center: [0, 0, 750]
+  center: [0, 0, 775]

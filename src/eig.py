@@ -2,6 +2,8 @@ import numpy as np
 from tqdm import tqdm
 import scipy.linalg
 from scipy.sparse.linalg import svds
+import multiprocessing
+from concurrent.futures import ProcessPoolExecutor
 
 from .utils import euclidean_distance, normalize_eigenvector
 
@@ -26,9 +28,20 @@ def direct_transfer_function(s, r, k, **kwargs) -> np.array:
             g[i, j] = np.round(numerator / denominator, 5)
     return g
 
-def blockwise_transfer_function(s, r, k, blocksize=500, **kwargs) -> np.array:
+def _compute_block(args):
     """
-    Computes the transfer function in blocks for memory efficiency (vectorized within blocks).
+    Helper function to compute one block of the transfer function.
+    """
+    s, r_block, k, block_start = args
+    diffs = r_block[:, None, :] - s[None, :, :]
+    dists = np.linalg.norm(diffs, axis=-1)
+    dists = np.where(dists == 0, np.finfo(float).eps, dists)
+    g_block = -np.exp(1j * k * dists) / (4 * np.pi * dists)
+    return block_start, g_block
+
+def blockwise_transfer_function(s, r, k, blocksize=500, **kwargs) -> np.ndarray:
+    """
+    Computes the transfer function in parallel blocks for memory efficiency and speed.
 
     Args:
         s (np.ndarray): Source points (Ns, 3).
@@ -41,13 +54,20 @@ def blockwise_transfer_function(s, r, k, blocksize=500, **kwargs) -> np.array:
     """
     Ns, Nr = len(s), len(r)
     g = np.zeros((Nr, Ns), dtype=complex)
-    for i in tqdm(range(0, Nr, blocksize), desc="Computing transfer function (blockwise method)", total=(Nr + blocksize - 1) // blocksize):
-        r_r_block = r[i:i + blocksize]
-        diffs = r_r_block[:, None, :] - s[None, :, :]
-        dists = np.linalg.norm(diffs, axis=-1)
-        dists = np.where(dists == 0, np.finfo(float).eps, dists)  # Avoid division by zero
-        g_block = -np.exp(1j * k * dists) / (4 * np.pi * dists)
-        g[i:i + blocksize, :] = g_block
+
+    blocks = [(s, r[i:i + blocksize], k, i) for i in range(0, Nr, blocksize)]
+    num_blocks = len(blocks)
+
+    max_cpus = multiprocessing.cpu_count()
+    num_workers = min(max_cpus // 2, num_blocks)
+
+    with ProcessPoolExecutor(max_workers=num_workers) as executor:
+        results = list(tqdm(executor.map(_compute_block, blocks), total=num_blocks,
+                            desc=f"Parallel transfer function (workers={num_workers})"))
+
+    for block_start, g_block in results:
+        g[block_start:block_start + g_block.shape[0], :] = g_block
+
     return g
 
 def free_space_transfer_function(s, r, k, method='direct', **kwargs) -> np.array:
