@@ -11,7 +11,6 @@ if __name__ == "__main__":
     source_points = create_points(config['source'])
     receiver_points = create_points(config['receiver'])
 
-
     print("Source points shape:", source_points.shape)
     print("Receiver points shape:", receiver_points.shape)
 
@@ -22,31 +21,30 @@ if __name__ == "__main__":
     # Compute transfer matrix
     Gsr = free_space_transfer_function(source_points, receiver_points, wavenumber, method='blockwise')
 
-    # Compute normalization constant
     S = sum_rule(Gsr)
     print("S:", S)
 
     # Calculate modes
-    max_components = config.get('max_components', 10)
-    eig_vals, eig_vect_normalized = calculate_modes(Gsr, normalize=False, max_components=max_components)
+    max_components = config.get('max_components', None)
+    eig_vect_receiver, eig_vals, eig_vect_source = calculate_modes(Gsr, normalize=False, max_components=max_components)
 
     # Save the eigenvectors/values
-    pickle.dump(eig_vals, open('eigen_values.pkl', 'wb'))
-    pickle.dump(eig_vect_normalized, open('eigen_vectors.pkl', 'wb'))
+    pickle.dump(eig_vals, open('eigen_values_all.pkl', 'wb'))
+    pickle.dump([eig_vect_receiver, eig_vect_source], open('eigen_vectors_all.pkl', 'wb'))
 
     # Plot mode strengths
-    plot_mode_strengths(eig_vals, S)
+    #plot_mode_strengths(eig_vals, S)
 
-    # Create evaluation points
-    xx,yy,zz,evaluation_points = create_evaluation_points(config['plot_plane'])
-    print("Evaluation points shape:", evaluation_points.shape)
+    ## Create evaluation points
+    #xx,yy,zz,evaluation_points = create_evaluation_points(config['plot_plane'])
+    #print("Evaluation points shape:", evaluation_points.shape)
 
-    # Evaluate modes at the evaluation points
-    modes = evaluate_modes(eig_vect_normalized, source_points, evaluation_points, wavenumber, z_normalize=True, method='vectorized')
+    ## Evaluate modes at the evaluation points
+    #modes = evaluate_modes(eig_vect_receiver, source_points, evaluation_points, wavenumber, z_normalize=True, method='parallel')
 
-    # Save the modes
-    pickle.dump(modes, open('evaluated_modes.pkl', 'wb'))
+    ## Save the modes
+    #pickle.dump(modes, open('evaluated_modes_all.pkl', 'wb'))
 
-    # Plot modes
-    plot_modes(xx, yy, zz, modes, plane=config['plot_plane']['axis'], z=config['plot_plane'].get('z_idx'))
+    ## Plot modes
+    #plot_modes(xx, yy, zz, modes, plane=config['plot_plane']['axis'], z=config['plot_plane'].get('z_idx'))
 

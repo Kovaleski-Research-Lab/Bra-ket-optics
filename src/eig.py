@@ -25,7 +25,7 @@ def direct_transfer_function(s, r, k, **kwargs) -> np.array:
             d = euclidean_distance(s_point, r_point)
             numerator = -np.exp(1j * k * d)
             denominator = 4 * np.pi * d
-            g[i, j] = np.round(numerator / denominator, 5)
+            g[i, j] = numerator / denominator
     return g
 
 def _compute_block(args):
@@ -101,20 +101,32 @@ def calculate_modes(Gsr, normalize=True, max_components=None):
         k (float): Wavenumber.
         normalize (bool): Whether to normalize the eigenvectors.
     Returns:
-        eig_vals (np.ndarray): Eigenvalues of Gsr^† Gsr.
-        eig_vect_normalized (np.ndarray): Normalized eigenvectors.
+        eig_vect_receiver (np.ndarray): Eigenvectors of the receiver modes.
+        eig_vals (np.ndarray): Eigenvalues of the source modes.
+        eig_vect_source (np.ndarray): Eigenvectors of the source modes.
     """
     print("Calculating modes...")
-    # Eigen-decomposition of Gsr^H Gsr
-    Gsrd_Gsr = Gsr.conj().T @ Gsr
+
     if max_components is None:
-        eig_vect, eig_vals, Vh = scipy.linalg.svd(Gsrd_Gsr, full_matrices=True)
+        # SVD on Gsr to get the right and left singular vectors
+        U, s, Vh = np.linalg.svd(Gsr, full_matrices=True)
+        # Conjugate transpose Vh
+        Vh = Vh.conj().T  # Make Vh a column matrix
     else:
-        eig_vect, eig_vals, Vh = svds(Gsrd_Gsr, k=max_components)
-        eig_vals = np.flip(eig_vals)
-        eig_vect = np.flip(eig_vect, axis=-1)
+        # Use sparse SVD for large matrices
+        U, s, Vh = svds(Gsr, k=max_components)
+        U = np.flip(U, axis=1)  # Flip U to match the order of singular values
+        s = np.flip(s)
+        Vh = Vh.conj().T
+        Vh = np.flip(Vh, axis=1)
+
     if normalize:
-        eig_vect_normalized = normalize_eigenvector(eig_vect)
-    else:
-        eig_vect_normalized = eig_vect
-    return eig_vals, eig_vect_normalized
+        # Normalize the singular vectors
+        U = normalize_eigenvector(U)
+        Vh = normalize_eigenvector(Vh)
+
+    eig_vect_source = Vh
+    eig_vect_receiver = U
+    eig_vals = s
+
+    return eig_vect_receiver, eig_vals, eig_vect_source

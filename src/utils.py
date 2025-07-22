@@ -1,5 +1,8 @@
 import numpy as np
 from scipy.spatial.distance import cdist
+from tqdm import tqdm
+from joblib import Parallel, delayed
+from multiprocessing import cpu_count
 
 
 def euclidean_distance(s, d) -> float:
@@ -97,6 +100,46 @@ def evaluate_modes_direct(eigenvector, source_points, receiving_points, k, z_nor
         values.append(temp)
     return np.asarray(values)
 
+def evaluate_chunk(eigenvector, source_points, receiving_points_chunk, k, z_normalize):
+    distances = cdist(receiving_points_chunk, source_points)  # (Nr_chunk, Ns)
+    greens_kernel = np.exp(1j * k * distances) / distances
+    projected = greens_kernel @ eigenvector  # (Nr_chunk, Nmodes)
+    if z_normalize:
+        scale_factor = (-1 / (4 * np.pi)) * np.sqrt(np.abs(receiving_points_chunk[:, 2]))  # (Nr_chunk,)
+        return (scale_factor[:, np.newaxis] * projected).T  # (Nmodes, Nr_chunk)
+    else:
+        scale_factor = -1 / (4 * np.pi)
+        return (scale_factor * projected).T  # (Nmodes, Nr_chunk)
+
+def evaluate_modes_parallel(eigenvector, source_points, receiving_points, k, z_normalize=True, max_workers=None, chunks=8):
+    """
+    Parallelized mode evaluation over receiving points.
+
+    Args:
+        eigenvector (np.ndarray): (Ns, Nmodes)
+        source_points (np.ndarray): (Ns, 3)
+        receiving_points (np.ndarray): (Nr, 3)
+        k (float): Wavenumber
+        z_normalize (bool): Normalize by sqrt(z)
+        max_workers (int): CPUs to use (default: half available)
+        chunks (int): Number of chunks to split receiving points into
+
+    Returns:
+        np.ndarray: Evaluated modes (Nmodes, Nr)
+    """
+    max_workers = max_workers or min(cpu_count() // 2, chunks)
+    print("Evaluating modes in parallel (workers={})...".format(max_workers))
+    Nr = receiving_points.shape[0]
+    chunk_size = int(np.ceil(Nr / chunks))
+    point_chunks = [receiving_points[i:i + chunk_size] for i in range(0, Nr, chunk_size)]
+
+    results = Parallel(n_jobs=max_workers)(
+        delayed(evaluate_chunk)(eigenvector, source_points, chunk, k, z_normalize)
+        for chunk in point_chunks
+    )
+
+    return np.concatenate(results, axis=1)  # (Nmodes, Nr)
+
 def evaluate_modes_vectorized(eigenvector, source_points, receiving_points, k, z_normalize=True):
     """
     Evaluate modes at receiving points using a fully vectorized approach.
@@ -132,6 +175,8 @@ def evaluate_modes(eigenvector, source_points, receiving_points, k, z_normalize=
         return evaluate_modes_direct(eigenvector, source_points, receiving_points, k, z_normalize)
     elif method == 'vectorized':
         return evaluate_modes_vectorized(eigenvector, source_points, receiving_points, k, z_normalize)
+    elif method == 'parallel':
+        return evaluate_modes_parallel(eigenvector, source_points, receiving_points, k, z_normalize)
     else:
         raise ValueError("Method not recognized. Use 'direct' or 'vectorized'.")
 

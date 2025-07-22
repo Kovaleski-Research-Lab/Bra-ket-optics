@@ -1,0 +1,34 @@
+#
+wavelength: 1
+max_components:
+
+source:
+  axis: 'xz'
+  Nx: 9
+  Ny: 
+  Nz: 1
+  Lx: 4.5
+  Ly: 
+  Lz: 
+  center: [0, 0, -2.5]
+
+receiver:
+  axis: 'xz'
+  Nx: 9
+  Ny: 
+  Nz: 1
+  Lx: 4.5
+  Ly: 
+  Lz: 
+  center: [0, 0, 2.5]
+
+plot_plane:
+  axis: 'xz'
+  discretization: 100
+  Lx: 4.5
+  Ly: 
+  Lz: 5
+  x_idx:
+  y_idx: 0
+  z_idx: 
+  center: [0, 0, 0]

@@ -25,8 +25,14 @@ def plot_modes(xx, yy, zz, modes, plane='yz', x=None, y=None, z=None):
             plt.show()
 
     elif plane == 'xz':
-        sliced_modes = modes[:, :, 0, :].squeeze()
-        # Optional: Add plot here if needed
+        if y is None:
+            raise ValueError("For 'xz' plane, y-coordinate must be specified.")
+        for mode in modes:
+            sliced_modes = mode[:, y, :].squeeze()
+            fig, ax = plt.subplots(figsize=(5,5))
+            fig.suptitle(f"Mode {mode}")
+            ax.imshow(np.real(sliced_modes), cmap='jet')
+            plt.show()
 
     elif plane == 'xy':
         if z is None:
