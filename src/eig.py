@@ -110,15 +110,26 @@ def calculate_modes(Gsr, normalize=True, max_components=None):
     if max_components is None:
         # SVD on Gsr to get the right and left singular vectors
         U, s, Vh = np.linalg.svd(Gsr, full_matrices=True)
+        # Sort based on |s|^2
+        idx = np.argsort(np.abs(s)**2)[::-1]
+        U = U[:, idx]
+        s = s[idx]
+        Vh = Vh[:, idx]
+
         # Conjugate transpose Vh
         Vh = Vh.conj().T  # Make Vh a column matrix
+
     else:
         # Use sparse SVD for large matrices
         U, s, Vh = svds(Gsr, k=max_components)
-        U = np.flip(U, axis=1)  # Flip U to match the order of singular values
-        s = np.flip(s)
+        # Sort based on |s|^2
+        idx = np.argsort(np.abs(s)**2)[::-1]
+        U = U[:, idx]
+        s = s[idx]
+        Vh = Vh[:, idx]
+
+        # Conjugate transpose Vh
         Vh = Vh.conj().T
-        Vh = np.flip(Vh, axis=1)
 
     if normalize:
         # Normalize the singular vectors
