@@ -28,7 +28,8 @@ RUN pip3 install --upgrade pip && \
     requests \
     pyyaml \
     tqdm \
-    scikit-image 
+    scikit-image \
+    h5py
 
 # Set the default command to run when the container starts
 CMD ["bash"]
