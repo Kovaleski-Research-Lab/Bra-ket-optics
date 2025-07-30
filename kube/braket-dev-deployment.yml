@@ -29,7 +29,7 @@ spec:
 
       containers:
       - name: braket-dev-container
-        image: docker.io/kovaleskilab/braket-optics:latest
+        image: docker.io/kovaleskilab/braket-optics:v1
         imagePullPolicy: Always
         command: ["/bin/sh", "-c"]
         args:
@@ -48,7 +48,7 @@ spec:
         resources:
           limits:
             memory: 200Gi
-            cpu: 120
+            cpu: 200
           requests:
             memory: 200Gi
-            cpu: 120
+            cpu: 200

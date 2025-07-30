@@ -11,3 +11,18 @@ spec:
     requests:
       storage: 500Gi
 
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: braket-code
+  namespace: gpn-mizzou-muem
+spec:
+  storageClassName: rook-cephfs-central
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 50Gi
+
