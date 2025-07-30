@@ -51,16 +51,26 @@ if __name__ == "__main__":
     # First, SVD on the Gsr matrix
     U, s, Vh = np.linalg.svd(Gsr, full_matrices=True)
 
+    # Sort singular values and vectors
+    idx = np.argsort(np.abs(s)**2)[::-1]
+    s = s[idx]
+    U = U[:, idx]
+    Vh = Vh[idx, :]
+
     # Now, eigenvector/eigenvalue decomposition on Gsrd_Gsr and Gsr_Gsrd
     Gsrd_Gsr = Gsr.conj().T @ Gsr
     eig_vals_source, eig_vect_source = np.linalg.eigh(Gsrd_Gsr)
-    eig_vals_source = np.flip(eig_vals_source)
-    eig_vect_source = np.flip(eig_vect_source, axis=-1)
+    # Sort eigenvalues and eigenvectors on |eig_vals_source|^2
+    idx_source = np.argsort(np.abs(eig_vals_source)**2)[::-1]
+    eig_vals_source = eig_vals_source[idx_source]
+    eig_vect_source = eig_vect_source[:, idx_source]
     
     Gsr_Gsrd = Gsr @ Gsr.conj().T
     eig_vals_receiver, eig_vect_receiver = np.linalg.eigh(Gsr_Gsrd)
-    eig_vals_receiver = np.flip(eig_vals_receiver)
-    eig_vect_receiver = np.flip(eig_vect_receiver, axis=-1)
+    # Sort eigenvalues and eigenvectors on |eig_vals_receiver|^2
+    idx_receiver = np.argsort(np.abs(eig_vals_receiver)**2)[::-1]
+    eig_vals_receiver = eig_vals_receiver[idx_receiver]
+    eig_vect_receiver = eig_vect_receiver[:, idx_receiver]
 
     Vh = Vh.conj().T  # Make Vh a column matrix
 
