@@ -141,3 +141,33 @@ def calculate_modes(Gsr, normalize=True, max_components=None):
     eig_vals = s
 
     return eig_vect_receiver, eig_vals, eig_vect_source
+
+
+def forward_projection(source_field:np.ndarray, Gsr:np.ndarray) -> np.ndarray:
+    """
+    Projects the source field onto the receiver points using the transfer function matrix Gsr.
+
+    Args:
+        source_field (np.ndarray): Field at source points (Ns,).
+        Gsr (np.ndarray): Transfer function matrix (Nr, Ns).
+
+    Returns:
+        np.ndarray: Projected field at receiver points (Nr,).
+    """
+    return np.dot(Gsr, source_field)
+
+
+def inverse_projection(aj:np.ndarray, sj:np.ndarray, receiver_eig_vect:np.ndarray) -> np.ndarray:
+    """
+    Projects the coefficients aj back to the source points using the receiver eigenvectors.
+
+    Args:
+        aj (np.ndarray): Coefficients at receiver points (Nr,).
+        sj (np.ndarray): Source eigenvectors (Ns, Nr).
+        receiver_eig_vect (np.ndarray): Eigenvectors of the receiver modes (Nr, Nr).
+
+    Returns:
+        np.ndarray: Projected field at source points (Ns,).
+    """
+    weights = aj / sj
+    return receiver_eig_vect.T @ weights

@@ -29,11 +29,11 @@ if __name__ == "__main__":
     eig_vect_receiver, eig_vals, eig_vect_source = calculate_modes(Gsr, normalize=False, max_components=max_components)
 
     # Save the eigenvectors/values
-    pickle.dump(eig_vals, open('eigen_values_all.pkl', 'wb'))
-    pickle.dump([eig_vect_receiver, eig_vect_source], open('eigen_vectors_all.pkl', 'wb'))
+    pickle.dump(eig_vals, open('eigen_values_all_close.pkl', 'wb'))
+    pickle.dump([eig_vect_receiver, eig_vect_source], open('eigen_vectors_all_close.pkl', 'wb'))
 
     eig_vals = pickle.load(open('eigen_values_all.pkl', 'rb'))
-    eig_vect_receiver, eig_vect_source = pickle.load(open('eigen_vectors_all.pkl', 'rb'))
+    eig_vect_receiver, eig_vect_source = pickle.load(open('eigen_vectors_all_close.pkl', 'rb'))
 
     # Plot mode strengths
     #plot_mode_strengths(eig_vals, S)
@@ -46,7 +46,7 @@ if __name__ == "__main__":
     modes = evaluate_modes(eig_vect_receiver, source_points, evaluation_points, wavenumber, z_normalize=True, method='parallel')
 
     ## Save the modes
-    pickle.dump(modes, open('evaluated_modes_all.pkl', 'wb'))
+    pickle.dump(modes, open('evaluated_modes_all_close.pkl', 'wb'))
 
     ## Plot modes
     #plot_modes(xx, yy, zz, modes, plane=config['plot_plane']['axis'], z=config['plot_plane'].get('z_idx'))
