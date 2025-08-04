@@ -7,6 +7,8 @@ from concurrent.futures import ProcessPoolExecutor
 
 from .utils import euclidean_distance, normalize_eigenvector
 
+multiprocessing.set_start_method('spawn', force=True)
+
 def direct_transfer_function(s, r, k, **kwargs) -> np.array:
     """
     Computes the transfer function between sources and receivers using nested loops (direct method).
@@ -19,7 +21,7 @@ def direct_transfer_function(s, r, k, **kwargs) -> np.array:
     Returns:
         np.ndarray: Transfer function matrix of shape (Nr, Ns).
     """
-    g = np.zeros((len(r), len(s)), dtype=complex)
+    g = np.zeros((len(r), len(s)), dtype=np.complex128)
     for i, r_point in tqdm(enumerate(r), desc="Computing transfer function (direct method)", total=len(r)):
         for j, s_point in enumerate(s):
             d = euclidean_distance(s_point, r_point)
@@ -53,7 +55,7 @@ def blockwise_transfer_function(s, r, k, blocksize=500, **kwargs) -> np.ndarray:
         np.ndarray: Transfer function matrix (Nr, Ns).
     """
     Ns, Nr = len(s), len(r)
-    g = np.zeros((Nr, Ns), dtype=complex)
+    g = np.zeros((Nr, Ns), dtype=np.complex128)
 
     blocks = [(s, r[i:i + blocksize], k, i) for i in range(0, Nr, blocksize)]
     num_blocks = len(blocks)
@@ -87,7 +89,7 @@ def free_space_transfer_function(s, r, k, method='direct', **kwargs) -> np.array
         return direct_transfer_function(s, r, k)
     elif method == 'blockwise':
         blocksize = kwargs.get('blocksize', 500)
-        return blockwise_transfer_function(s, r, k, blocksize, **kwargs)
+        return blockwise_transfer_function(s, r, k, blocksize)
     else:
         raise ValueError("Method not recognized.")
 
@@ -154,7 +156,7 @@ def forward_projection(source_field:np.ndarray, Gsr:np.ndarray) -> np.ndarray:
     Returns:
         np.ndarray: Projected field at receiver points (Nr,).
     """
-    return np.dot(Gsr, source_field)
+    return Gsr @ source_field 
 
 
 def inverse_projection(aj:np.ndarray, sj:np.ndarray, receiver_eig_vect:np.ndarray) -> np.ndarray:

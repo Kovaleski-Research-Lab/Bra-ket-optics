@@ -1,7 +1,6 @@
 import numpy as np
 import pytest
 import sys
-sys.path.append('../')
 from src.geometry import create_points
 
 def test_point():
