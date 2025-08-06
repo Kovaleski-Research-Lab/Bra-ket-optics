@@ -49,22 +49,25 @@ def normalize_phase(eigenvector):
     phase = np.angle(eigenvector[mid_idx])
     return eigenvector * np.exp(-1j * phase)
 
-
 def normalize_eigenvector(eigenvector):
     """
-    Normalizes each column of an eigenvector matrix by phase.
+    Normalize each column of an eigenvector matrix to have unit norm and phase-normalized center element.
 
     Args:
-        eigenvector (np.ndarray): 2D array of eigenvectors.
+        eigenvector (np.ndarray): 2D array of eigenvectors (Ns, Nmodes).
 
     Returns:
-        np.ndarray: Column-wise phase-normalized eigenvectors.
+        np.ndarray: Normalized eigenvectors.
     """
-    print("Normalizing eigenvectors by phase...")
-    return np.column_stack([
-        normalize_phase(eigenvector[:, j])
-        for j in range(eigenvector.shape[1])
-    ])
+    print("Normalizing eigenvectors by phase and magnitude...")
+    def normalize_column(vec):
+        vec = normalize_phase(vec)
+        norm = np.linalg.norm(vec)
+        return vec / norm if norm > 0 else vec
+
+    return np.column_stack([normalize_column(eigenvector[:, j])
+                            for j in range(eigenvector.shape[1])])
+
 
 def evaluate_modes_direct(eigenvector, source_points, receiving_points, k, z_normalize=True):
     """

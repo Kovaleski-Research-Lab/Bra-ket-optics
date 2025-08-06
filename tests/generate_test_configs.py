@@ -3,7 +3,7 @@ import itertools
 import random  # use random, not np.random here
 import copy
 
-def generate_configs(num_samples=20, seed=42):
+def generate_configs(num_samples=20, seed=None):
     geometries = ['plane']
     axes = ['xy', 'xz', 'yz']
     lengths = [100, 200, 300]
@@ -68,7 +68,9 @@ def generate_configs(num_samples=20, seed=42):
                         all_configs.append({'source': source, 'receiver': receiver})
 
     # Sample randomly
-    random.seed(seed)
+    if seed is not None:
+        random.seed(seed)
+
     if len(all_configs) <= num_samples:
         return all_configs
     return random.sample(all_configs, num_samples)

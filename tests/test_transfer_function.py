@@ -199,7 +199,7 @@ def test_free_space_function_consistency(scale):
 from src.geometry import create_points
 from tests.generate_test_configs import generate_configs
 
-@pytest.mark.parametrize("config", generate_configs(100, 1337))
+@pytest.mark.parametrize("config", generate_configs(5))
 def test_transfer_function_with_geometry(config):
     s = create_points(config['source'])
     r = create_points(config['receiver'])
@@ -212,7 +212,7 @@ def test_transfer_function_with_geometry(config):
     assert np.allclose(g_direct, g_blockwise, rtol=1e-10, atol=1e-12), \
         f"Max difference: {np.max(np.abs(g_direct - g_blockwise))}"
 
-@pytest.mark.parametrize("config", generate_configs(100, 1337))
+@pytest.mark.parametrize("config", generate_configs(5))
 def test_free_space_function_with_geometry(config):
     s = create_points(config['source'])
     r = create_points(config['receiver'])

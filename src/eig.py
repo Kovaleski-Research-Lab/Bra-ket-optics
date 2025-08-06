@@ -111,7 +111,7 @@ def calculate_modes(Gsr, normalize=True, max_components=None):
 
     if max_components is None:
         # SVD on Gsr to get the right and left singular vectors
-        U, s, Vh = np.linalg.svd(Gsr, full_matrices=True)
+        U, s, Vh = np.linalg.svd(Gsr, full_matrices=False)
         # Sort based on |s|^2
         idx = np.argsort(np.abs(s)**2)[::-1]
         U = U[:, idx]
@@ -133,10 +133,14 @@ def calculate_modes(Gsr, normalize=True, max_components=None):
         # Conjugate transpose Vh
         Vh = Vh.conj().T
 
+    assert np.allclose(Gsr, U @ np.diag(s) @ Vh.conj().T), "SVD reconstruction failed before normalization"
+
     if normalize:
         # Normalize the singular vectors
         U = normalize_eigenvector(U)
         Vh = normalize_eigenvector(Vh)
+        assert np.allclose(np.linalg.norm(U, axis=0), 1.0)
+        assert np.allclose(np.linalg.norm(Vh, axis=0), 1.0)
 
     eig_vect_source = Vh
     eig_vect_receiver = U
@@ -145,7 +149,7 @@ def calculate_modes(Gsr, normalize=True, max_components=None):
     return eig_vect_receiver, eig_vals, eig_vect_source
 
 
-def forward_projection(source_field:np.ndarray, Gsr:np.ndarray) -> np.ndarray:
+def forward_projection_direct(source_field:np.ndarray, Gsr:np.ndarray) -> np.ndarray:
     """
     Projects the source field onto the receiver points using the transfer function matrix Gsr.
 
@@ -156,20 +160,87 @@ def forward_projection(source_field:np.ndarray, Gsr:np.ndarray) -> np.ndarray:
     Returns:
         np.ndarray: Projected field at receiver points (Nr,).
     """
+    if source_field.ndim == 2 and source_field.shape[1] != 1:
+        source_field = source_field.flatten()
+    if source_field.ndim == 1:
+        source_field = source_field.reshape(-1, 1)
+
     return Gsr @ source_field 
 
 
-def inverse_projection(aj:np.ndarray, sj:np.ndarray, receiver_eig_vect:np.ndarray) -> np.ndarray:
+def inverse_projection_direct(received_field:np.ndarray, Gsr:np.ndarray) -> np.ndarray:
     """
-    Projects the coefficients aj back to the source points using the receiver eigenvectors.
+    Projects the received field back to the source points using the transfer function matrix Gsr.
 
     Args:
-        aj (np.ndarray): Coefficients at receiver points (Nr,).
-        sj (np.ndarray): Source eigenvectors (Ns, Nr).
-        receiver_eig_vect (np.ndarray): Eigenvectors of the receiver modes (Nr, Nr).
+        received_field (np.ndarray): Field at receiver points (Nr,).
+        Gsr (np.ndarray): Transfer function matrix (Nr, Ns).
 
     Returns:
         np.ndarray: Projected field at source points (Ns,).
     """
-    weights = aj / sj
-    return receiver_eig_vect.T @ weights
+    if received_field.ndim == 2 and received_field.shape[1] != 1:
+        received_field = received_field.flatten()
+    if received_field.ndim == 1:
+        received_field = received_field.reshape(-1, 1)
+
+    return np.linalg.pinv(Gsr) @ received_field
+
+def forward_projection_eig(source_field: np.ndarray, eig_vals: np.ndarray,
+                           eig_vect_source: np.ndarray, eig_vect_receiver: np.ndarray) -> np.ndarray:
+    """
+    Perform forward propagation using mode decomposition:
+    |phi_Ro> = sum_j (1 / s_j*) <psi_Sj|psi_Si> |phi_Rj>
+
+    Args:
+        source_field (np.ndarray): Source field (Ns, 1).
+        eig_vals (np.ndarray): Eigenvalues s_j.
+        eig_vect_source (np.ndarray): Right singular vectors (Ns, Nmodes).
+        eig_vect_receiver (np.ndarray): Left singular vectors (Nr, Nmodes).
+
+    Returns:
+        np.ndarray: Receiver field (Nr, 1).
+    """
+    # Ensure shapes
+    assert source_field.ndim == 2 and source_field.shape[1] == 1, "source_field must be a (Ns, 1) column vector"
+
+    # <psi_Sj|psi_Si>: inner product of each source mode with the input
+    a_j = eig_vect_source.conj().T @ source_field  # shape: (Nmodes, 1)
+
+    # Divide by s_j*
+    scale = a_j * np.conj(eig_vals).reshape(-1, 1)  # shape: (Nmodes, 1)
+
+    # Sum_j (a_j / s_j*) * |phi_Rj>
+    output = eig_vect_receiver @ scale  # shape: (Nr, 1)
+
+    return output
+
+
+def inverse_projection_eig(receiver_field: np.ndarray, eig_vals: np.ndarray,
+                           eig_vect_source: np.ndarray, eig_vect_receiver: np.ndarray) -> np.ndarray:
+    """
+    Inverse propagation using mode decomposition.
+    
+    Args:
+        receiver_field (np.ndarray): Complex receiver field vector of shape (Nr,).
+        eig_vals (np.ndarray): Singular values s_j of shape (Nmodes,).
+        eig_vect_source (np.ndarray): Source eigenvectors ψ_Sj of shape (Ns, Nmodes).
+        eig_vect_receiver (np.ndarray): Receiver eigenvectors ϕ_Rj of shape (Nr, Nmodes).
+
+    Returns:
+        np.ndarray: Source field vector of shape (Ns,).
+    """
+    # Ensure shapes
+    assert receiver_field.ndim == 2 and receiver_field.shape[1] == 1, "receiver_field must be a (Nr, 1) column vector"
+
+    # Project receiver field onto receiver modes
+    a_j = np.conj(eig_vect_receiver.T) @ receiver_field  # Shape: (Nmodes,)
+    
+    # Weight by 1 / s_j
+    weights = a_j / eig_vals.reshape(-1,1)  # Shape: (Nmodes,)
+    
+    # Sum over weighted source modes
+    source_field = eig_vect_source @ weights  # Shape: (Ns,)
+    
+    return source_field
+
