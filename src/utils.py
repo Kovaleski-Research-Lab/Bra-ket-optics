@@ -4,6 +4,32 @@ from tqdm import tqdm
 from joblib import Parallel, delayed
 from multiprocessing import cpu_count
 
+def scale_config(config: dict) -> dict:
+    """
+    Scales the parameters in the config dictionary by the wavelength.
+    """
+    wavelength = config.get('wavelength', 1.0)
+    wavelength = float(wavelength)  # Ensure wavelength is a float
+    if wavelength <= 0:
+        raise ValueError("Wavelength must be a positive number.")
+    
+    # Scale the parameters in the config dictionary for the 'source' and 'receiver'
+    for key in ['source', 'receiver']:
+        Lx = config[key].get('Lx', None)
+        Ly = config[key].get('Ly', None)
+        Lz = config[key].get('Lz', None)
+        center = config[key].get('center', (0, 0, 0))
+        new_center = (np.round(center[0] / wavelength,5), 
+                      np.round(center[1] / wavelength,5), 
+                      np.round(center[2] / wavelength,5))
+        config[key]['Lx'] = np.round(Lx / wavelength, 5) if Lx is not None else None
+        config[key]['Ly'] = np.round(Ly / wavelength, 5) if Ly is not None else None
+        config[key]['Lz'] = np.round(Lz / wavelength, 5) if Lz is not None else None
+        config[key]['center'] = new_center
+    # Scale the wavelength itself
+    config['wavelength'] = wavelength / wavelength  # Normalize wavelength to 1
+    
+    return config
 
 def euclidean_distance(s, d) -> float:
     """

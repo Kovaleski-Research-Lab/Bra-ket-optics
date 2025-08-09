@@ -9,7 +9,7 @@ source:
   Nz: 
   Lx: 2040
   Ly: 2040
-  Lz: None
+  Lz: 
   center: [0, 0, 0]
 
 receiver:
@@ -20,8 +20,8 @@ receiver:
   Nz:
   Lx: 2040
   Ly: 2040
-  Lz: None
-  center: [0, 0, 75]
+  Lz: 
+  center: [0, 0, 775]
 
 plot_plane:
   axis: 'xy'
@@ -30,4 +30,4 @@ plot_plane:
   Ly: 2040
   Lz: 
   z_idx: 0
-  center: [0, 0, 75]
+  center: [0, 0, 750]

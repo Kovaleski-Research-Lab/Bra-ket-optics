@@ -8,8 +8,9 @@ import pickle
 if __name__ == "__main__":
     config = yaml.safe_load(open("config.yaml", "r"))
 
-    source_points = create_points(config['source'])
-    receiver_points = create_points(config['receiver'])
+    wavelength = config['wavelength']
+    source_points = create_points(config['source'], wavelength=wavelength)
+    receiver_points = create_points(config['receiver'], wavelength=wavelength)
 
     print("Source points shape:", source_points.shape)
     print("Receiver points shape:", receiver_points.shape)
@@ -26,28 +27,29 @@ if __name__ == "__main__":
 
     # Calculate modes
     max_components = config.get('max_components', None)
+    print(max_components)
     eig_vect_receiver, eig_vals, eig_vect_source = calculate_modes(Gsr, normalize=False, max_components=max_components)
 
     # Save the eigenvectors/values
-    pickle.dump(eig_vals, open('eigen_values_all_close.pkl', 'wb'))
-    pickle.dump([eig_vect_receiver, eig_vect_source], open('eigen_vectors_all_close.pkl', 'wb'))
+    pickle.dump(eig_vals, open('eigen_values_all.pkl', 'wb'))
+    pickle.dump([eig_vect_receiver, eig_vect_source], open('eigen_vectors_all.pkl', 'wb'))
 
-    eig_vals = pickle.load(open('eigen_values_all.pkl', 'rb'))
-    eig_vect_receiver, eig_vect_source = pickle.load(open('eigen_vectors_all_close.pkl', 'rb'))
-
-    # Plot mode strengths
-    #plot_mode_strengths(eig_vals, S)
-
-    ## Create evaluation points
-    xx,yy,zz,evaluation_points = create_evaluation_points(config['plot_plane'])
-    print("Evaluation points shape:", evaluation_points.shape)
-
-    ## Evaluate modes at the evaluation points
-    modes = evaluate_modes(eig_vect_receiver, source_points, evaluation_points, wavenumber, z_normalize=True, method='parallel')
-
-    ## Save the modes
-    pickle.dump(modes, open('evaluated_modes_all_close.pkl', 'wb'))
-
-    ## Plot modes
-    #plot_modes(xx, yy, zz, modes, plane=config['plot_plane']['axis'], z=config['plot_plane'].get('z_idx'))
-
+#    eig_vals = pickle.load(open('eigen_values_all.pkl', 'rb'))
+#    eig_vect_receiver, eig_vect_source = pickle.load(open('eigen_vectors_all_.pkl', 'rb'))
+#
+#    # Plot mode strengths
+#    #plot_mode_strengths(eig_vals, S)
+#
+#    ## Create evaluation points
+#    xx,yy,zz,evaluation_points = create_evaluation_points(config['plot_plane'])
+#    print("Evaluation points shape:", evaluation_points.shape)
+#
+#    ## Evaluate modes at the evaluation points
+#    modes = evaluate_modes(eig_vect_receiver, source_points, evaluation_points, wavenumber, z_normalize=True, method='parallel')
+#
+#    ## Save the modes
+#    pickle.dump(modes, open('evaluated_modes_all_close.pkl', 'wb'))
+#
+#    ## Plot modes
+#    #plot_modes(xx, yy, zz, modes, plane=config['plot_plane']['axis'], z=config['plot_plane'].get('z_idx'))
+#

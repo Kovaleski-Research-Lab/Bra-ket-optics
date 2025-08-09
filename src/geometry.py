@@ -1,5 +1,8 @@
 import numpy as np
 
+
+
+
 def create_point(config: dict) -> np.ndarray:
     """Returns a single 3D point."""
     center = np.array(config.get('center', (0, 0, 0)), dtype=float)
@@ -146,3 +149,20 @@ def create_evaluation_points(config: dict):
     return xx, yy, zz, r
 
 
+
+
+if __name__ == "__main__":
+    import yaml
+    import sys
+    sys.path.append('../')
+    from src.utils import scale_config
+    config = yaml.safe_load(open("../config.yaml", "r"))
+    
+    config = scale_config(config)
+
+    source_points = create_points(config['source'])
+    receiver_points = create_points(config['receiver'])
+    from IPython import embed; embed()
+
+
+    

@@ -9,6 +9,7 @@ from src.eig import (
     inverse_projection_eig
 )
 from src.geometry import create_points
+from src.utils import scale_config
 import logging
 import os
 
@@ -28,14 +29,15 @@ logger.addHandler(fh)
 @pytest.fixture
 def test_config_01():
     return {
+        'wavelength': 1550,
         'source': {
             'geometry': 'plane',
             'axis': 'xy',
             'Nx': 4,
             'Ny': 4,
             'Nz': None,
-            'Lx': 4,
-            'Ly': 4,
+            'Lx': 40000,
+            'Ly': 40000,
             'Lz': None,
             'center': [0, 0, 0]
         },
@@ -45,24 +47,25 @@ def test_config_01():
             'Nx': 4,
             'Ny': 4,
             'Nz': None,
-            'Lx': 4,
-            'Ly': 4,
+            'Lx': 40000,
+            'Ly': 40000,
             'Lz': None,
-            'center': [0, 0, 10]
+            'center': [0, 0, 15500]
         }
     }
 
 @pytest.fixture
 def test_config_02():
     return {
+        'wavelength': 1550,
         'source': {
             'geometry': 'plane',
             'axis': 'xy',
             'Nx': 2,
             'Ny': 2,
             'Nz': None,
-            'Lx': 2,
-            'Ly': 2,
+            'Lx': 20000,
+            'Ly': 20000,
             'Lz': None,
             'center': [0, 0, 0]
         },
@@ -72,10 +75,38 @@ def test_config_02():
             'Nx': 2,
             'Ny': 2,
             'Nz': None,
-            'Lx': 2,
-            'Ly': 2,
+            'Lx': 20000,
+            'Ly': 20000,
             'Lz': None,
-            'center': [0, 0, 10]
+            'center': [0, 0, 15500]
+        }
+    }
+
+@pytest.fixture
+def test_config_03():
+    return {
+        'wavelength': 1550,
+        'source': {
+            'geometry': 'plane',
+            'axis': 'xy',
+            'Nx': 25,
+            'Ny': 25,
+            'Nz': None,
+            'Lx': 20400,
+            'Ly': 20400,
+            'Lz': None,
+            'center': [0, 0, 0]
+        },
+        'receiver': {
+            'geometry': 'plane',
+            'axis': 'xy',
+            'Nx': 25,
+            'Ny': 25,
+            'Nz': None,
+            'Lx': 20400,
+            'Ly': 20400,
+            'Lz': None,
+            'center': [0, 0, 15500]
         }
     }
 
@@ -90,6 +121,10 @@ def source_field_4x4():
 @pytest.fixture
 def source_field_4x4_gaussian():
     return create_gaussian(4, 4, sigma=0.3)
+
+@pytest.fixture
+def source_field_50x50_gaussian():
+    return create_gaussian(25, 25, sigma=0.3)
     
 
 def generate_source_field_4x4():
@@ -160,6 +195,7 @@ def test_forward_all_methods_agree_2x2(test_config_02, source_field_2x2, rtol, a
     """Test that all three forward methods return identical results for 2x2 case."""
     logger.debug("==== Testing forward method agreement 2x2 ====")
     config = test_config_02
+    config = scale_config(config)
     source_points = create_points(config['source'])
     receiving_points = create_points(config['receiver'])
     k = 2 * np.pi
@@ -194,6 +230,7 @@ def test_forward_all_methods_agree_4x4(test_config_01, source_field_4x4, rtol, a
     """Test that all three forward methods return identical results for 4x4 case."""
     logger.debug("==== Testing forward method agreement 4x4 ====")
     config = test_config_01
+    config = scale_config(config)
     source_points = create_points(config['source'])
     receiving_points = create_points(config['receiver'])
     k = 2 * np.pi
@@ -228,6 +265,7 @@ def test_forward_all_methods_agree_4x4_gaussian(test_config_01, source_field_4x4
     """Test that all three forward methods return identical results for 4x4 case."""
     logger.debug("==== Testing forward method agreement 4x4 ====")
     config = test_config_01
+    config = scale_config(config)
     source_points = create_points(config['source'])
     receiving_points = create_points(config['receiver'])
     k = 2 * np.pi
@@ -256,6 +294,40 @@ def test_forward_all_methods_agree_4x4_gaussian(test_config_01, source_field_4x4
     expected_eig_scale = np.linalg.norm(source_vector)
     np.testing.assert_allclose(result_by_hand, result_eig * expected_eig_scale, rtol=rtol, atol=atol)
 
+@pytest.mark.parametrize("rtol", [1e-8, 1e-9, 1e-10])
+@pytest.mark.parametrize("atol", [1e-10, 1e-11, 1e-12])
+def test_forward_directEig_methods_agree_50x50_gaussian(test_config_03, source_field_50x50_gaussian, rtol, atol):
+    """Test that the direct and eig forward methods return identical results for 50x50 case."""
+    logger.debug("==== Testing forward method agreement 50x50 ====")
+    config = test_config_03
+    config = scale_config(config)
+    source_points = create_points(config['source'])
+    receiving_points = create_points(config['receiver'])
+    k = 2 * np.pi
+    Gsr = free_space_transfer_function(source_points, receiving_points, k, method='blockwise')
+    eig_vect_receiver, eig_vals, eig_vect_source = calculate_modes(Gsr, normalize=False)
+    
+    # Prepare source field (normalized for eig method)
+    source_vector = source_field_50x50_gaussian.reshape(-1, 1)
+    source_vector = source_vector / np.linalg.norm(source_vector)
+    
+    # Get results from all three methods
+    result_direct = forward_projection_direct(source_vector, Gsr)
+    result_eig = forward_projection_eig(source_vector, eig_vals, eig_vect_source, eig_vect_receiver)
+    
+    logger.debug(f"Direct result shape: {result_direct.shape}")
+    logger.debug(f"Eig result shape: {result_eig.shape}")
+    
+    # All methods should return the same shape
+    assert result_direct.shape == result_eig.shape
+    
+    # Compare all methods
+    np.testing.assert_allclose(result_eig, result_direct, rtol=rtol, atol=atol)
+    # For eig comparison, we need to account for the normalization
+    expected_eig_scale = np.linalg.norm(source_vector)
+    np.testing.assert_allclose(result_direct, result_eig * expected_eig_scale, rtol=rtol, atol=atol)
+
+
 # ============ INVERSE PROJECTION TESTS - Cross-Method Comparisons ============
 
 @pytest.mark.parametrize("rtol", [1e-5, 1e-6, 1e-7, 1e-8, 1e-9, 1e-10])
@@ -264,6 +336,7 @@ def test_inverse_all_methods_agree_2x2(test_config_02, source_field_2x2, rtol, a
     """Test that all three inverse methods return identical results for 2x2 case."""
     logger.debug("==== Testing inverse method agreement 2x2 ====")
     config = test_config_02
+    config = scale_config(config)
     source_points = create_points(config['source'])
     receiving_points = create_points(config['receiver'])
     k = 2 * np.pi
@@ -299,6 +372,7 @@ def test_inverse_all_methods_agree_4x4(test_config_01, source_field_4x4, rtol, a
     """Test that all three inverse methods return identical results for 4x4 case."""
     logger.debug("==== Testing inverse method agreement 4x4 ====")
     config = test_config_01
+    config = scale_config(config)
     source_points = create_points(config['source'])
     receiving_points = create_points(config['receiver'])
     k = 2 * np.pi
@@ -334,6 +408,7 @@ def test_inverse_all_methods_agree_4x4_gaussian(test_config_01, source_field_4x4
     """Test that all three inverse methods return identical results for 4x4 case."""
     logger.debug("==== Testing inverse method agreement 4x4 ====")
     config = test_config_01
+    config = scale_config(config)
     source_points = create_points(config['source'])
     receiving_points = create_points(config['receiver'])
     k = 2 * np.pi
@@ -363,6 +438,44 @@ def test_inverse_all_methods_agree_4x4_gaussian(test_config_01, source_field_4x4
     np.testing.assert_allclose(result_by_hand, result_eig, rtol=rtol, atol=atol)
     np.testing.assert_allclose(result_direct, result_eig, rtol=rtol, atol=atol)
 
+@pytest.mark.parametrize("rtol", [1e-6])
+@pytest.mark.parametrize("atol", [1e-6])
+def test_inverse_directEig_methods_agree_50x50_gaussian(test_config_03, source_field_50x50_gaussian, rtol, atol):
+    """Test that the direct and eig inverse methods return identical results for 50x50 case."""
+    logger.debug("==== Testing inverse method agreement 50x50 ====")
+    config = test_config_03
+    config = scale_config(config)
+    source_points = create_points(config['source'])
+    receiving_points = create_points(config['receiver'])
+    k = 2 * np.pi
+    Gsr = free_space_transfer_function(source_points, receiving_points, k, method='blockwise')
+    eig_vect_receiver, eig_vals, eig_vect_source = calculate_modes(Gsr, normalize=False)
+    
+    # Create a projected field to invert (using forward_by_hand as reference)
+    source_vector = source_field_50x50_gaussian.reshape(-1, 1)
+    source_vector = source_vector / np.linalg.norm(source_vector)
+    projected_field = forward_projection_direct(source_vector, Gsr)
+    
+    # Get results from both inverse methods
+    result_direct = inverse_projection_direct(projected_field, Gsr)
+    result_eig = inverse_projection_eig(projected_field, eig_vals, eig_vect_source, eig_vect_receiver)
+    
+    logger.debug(f"Original source shape: {source_vector.shape}")
+    logger.debug(f"Direct result shape: {result_direct.shape}")
+    logger.debug(f"Eig result shape: {result_eig.shape}")
+    
+    # All methods should return the same shape
+    assert result_direct.shape == result_eig.shape
+
+    # Check for nans and infs
+    assert not np.any(np.isnan(result_direct)), "Direct result contains NaNs"
+    assert not np.any(np.isinf(result_direct)), "Direct result contains Infs"
+    assert not np.any(np.isnan(result_eig)), "Eig result contains NaNs"
+    assert not np.any(np.isinf(result_eig)), "Eig result contains Infs"
+    
+    # Compare both methods
+    np.testing.assert_allclose(result_direct, result_eig, rtol=rtol, atol=atol, err_msg="Max difference = {}".format(np.max(np.abs(result_direct - result_eig))))
+
 # ============ ROUND-TRIP TESTS ============
 
 @pytest.mark.parametrize("rtol", [1e-5, 1e-6, 1e-7, 1e-8, 1e-9, 1e-10])
@@ -371,6 +484,7 @@ def test_forward_inverse_round_trip_all_methods_2x2(test_config_02, source_field
     """Test forward->inverse round trip for all method combinations on 2x2."""
     logger.debug("==== Testing round trip all methods 2x2 ====")
     config = test_config_02
+    config = scale_config(config)
     source_points = create_points(config['source'])
     receiving_points = create_points(config['receiver'])
     k = 2 * np.pi
@@ -432,6 +546,7 @@ def test_forward_inverse_round_trip_all_methods_4x4(test_config_01, source_field
     """Test forward->inverse round trip for all method combinations on 4x4."""
     logger.debug("==== Testing round trip all methods 4x4 ====")
     config = test_config_01
+    config = scale_config(config)
     source_points = create_points(config['source'])
     receiving_points = create_points(config['receiver'])
     k = 2 * np.pi
@@ -493,6 +608,7 @@ def test_forward_inverse_round_trip_all_methods_4x4_gaussian(test_config_01, sou
     """Test forward->inverse round trip for all method combinations on 4x4."""
     logger.debug("==== Testing round trip all methods 4x4 ====")
     config = test_config_01
+    config = scale_config(config)
     source_points = create_points(config['source'])
     receiving_points = create_points(config['receiver'])
     k = 2 * np.pi

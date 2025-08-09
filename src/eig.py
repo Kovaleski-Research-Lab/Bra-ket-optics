@@ -64,8 +64,7 @@ def blockwise_transfer_function(s, r, k, blocksize=500, **kwargs) -> np.ndarray:
     num_workers = min(max_cpus // 2, num_blocks)
 
     with ProcessPoolExecutor(max_workers=num_workers) as executor:
-        results = list(tqdm(executor.map(_compute_block, blocks), total=num_blocks,
-                            desc=f"Parallel transfer function (workers={num_workers})"))
+        results = list(executor.map(_compute_block, blocks))
 
     for block_start, g_block in results:
         g[block_start:block_start + g_block.shape[0], :] = g_block
@@ -94,7 +93,7 @@ def free_space_transfer_function(s, r, k, method='direct', **kwargs) -> np.array
         raise ValueError("Method not recognized.")
 
 
-def calculate_modes(Gsr, normalize=True, max_components=None):
+def calculate_modes(Gsr, normalize=True, max_components=None, verbose=False):
     """
     Calculate modes from the transfer function matrix Gsr.
     
@@ -107,16 +106,18 @@ def calculate_modes(Gsr, normalize=True, max_components=None):
         eig_vals (np.ndarray): Eigenvalues of the source modes.
         eig_vect_source (np.ndarray): Eigenvectors of the source modes.
     """
-    print("Calculating modes...")
+
+    if verbose:
+        print("Calculating modes...")
 
     if max_components is None:
         # SVD on Gsr to get the right and left singular vectors
-        U, s, Vh = np.linalg.svd(Gsr, full_matrices=False)
+        U, s, Vh = np.linalg.svd(Gsr, full_matrices=True)
         # Sort based on |s|^2
         idx = np.argsort(np.abs(s)**2)[::-1]
         U = U[:, idx]
         s = s[idx]
-        Vh = Vh[:, idx]
+        Vh = Vh[idx, :]
 
         # Conjugate transpose Vh
         Vh = Vh.conj().T  # Make Vh a column matrix
@@ -128,7 +129,7 @@ def calculate_modes(Gsr, normalize=True, max_components=None):
         idx = np.argsort(np.abs(s)**2)[::-1]
         U = U[:, idx]
         s = s[idx]
-        Vh = Vh[:, idx]
+        Vh = Vh[idx, :]
 
         # Conjugate transpose Vh
         Vh = Vh.conj().T
